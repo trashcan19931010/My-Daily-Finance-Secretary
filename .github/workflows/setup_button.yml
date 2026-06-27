@@ -1,10 +1,10 @@
-name: 設定 Telegram 按鈕（僅需執行一次）
+name: 設定 Telegram 按鈕（僅需一次）
 
 on:
   workflow_dispatch:
     inputs:
       pages_url:
-        description: 'GitHub Pages 網址（例如 https://USERNAME.github.io/finance-secretary）'
+        description: 'GitHub Pages 網址（例：https://USERNAME.github.io/finance-secretary）'
         required: true
         type: string
 
@@ -12,20 +12,15 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - run: pip install requests
-
-      - name: 發送 Telegram 按鈕訊息
+      - run: python setup.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
           TRIGGER_PAT:        ${{ secrets.TRIGGER_PAT }}
           PAGES_URL:          ${{ inputs.pages_url }}
-        run: python setup.py

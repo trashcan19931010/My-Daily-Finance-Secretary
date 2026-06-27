@@ -1,7 +1,7 @@
 name: 財經新聞推播
 
 on:
-  workflow_dispatch:   # 由 Telegram 按鈕 → GitHub Pages → GitHub API 觸發
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -10,18 +10,13 @@ jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: 安裝套件
-        run: pip install -r requirements.txt
-
-      - name: 執行財經速報
+      - run: pip install -r requirements.txt
+      - run: python main.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -33,9 +28,7 @@ jobs:
           MARKETAUX_KEY:      ${{ secrets.MARKETAUX_KEY }}
           CURRENTS_KEY:       ${{ secrets.CURRENTS_KEY }}
           FRED_KEY:           ${{ secrets.FRED_KEY }}
-        run: python main.py
-
-      - name: 寫回已發送紀錄
+      - name: 儲存已發送紀錄
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
