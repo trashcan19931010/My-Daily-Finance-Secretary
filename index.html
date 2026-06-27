@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>財經速報</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,sans-serif;background:#f0f2f5;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:24px}
+.card{background:#fff;border-radius:20px;padding:40px 32px;text-align:center;max-width:400px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.icon{font-size:52px;margin-bottom:16px}
+h1{font-size:20px;font-weight:700;margin-bottom:6px}
+.sub{font-size:13px;color:#999;margin-bottom:24px}
+#box{padding:14px 18px;border-radius:10px;font-size:14px;line-height:1.6;background:#f5f5f5;color:#444}
+#box.ok{background:#e8f5e9;color:#2e7d32}
+#box.err{background:#ffebee;color:#c62828}
+.tip{margin-top:16px;font-size:12px;color:#ccc}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">📰</div>
+  <h1>財經速報</h1>
+  <p class="sub">Finance News Bot</p>
+  <div id="box">⏳ 正在觸發新聞收集...</div>
+  <p class="tip">約 2–5 分鐘後新聞將推播至 Telegram</p>
+</div>
+<script>
+const REPO = "YOUR_USERNAME/finance-secretary";
+const box  = document.getElementById("box");
+const tok  = window.location.hash.slice(1);
+if (!tok) {
+  box.className = "err";
+  box.textContent = "❌ 請使用 Telegram 按鈕開啟此頁面";
+} else {
+  fetch(`https://api.github.com/repos/${REPO}/actions/workflows/news_direct.yml/dispatches`,{
+    method:"POST",
+    headers:{"Authorization":`Bearer ${tok}`,"Accept":"application/vnd.github.v3+json","Content-Type":"application/json"},
+    body:JSON.stringify({ref:"main"})
+  }).then(r=>{
+    if(r.status===204){box.className="ok";box.textContent="✅ 已觸發！約 2–5 分鐘後 Telegram 收到新聞，可關閉此頁面。"}
+    else if(r.status===401){box.className="err";box.textContent="❌ Token 已過期，請重新執行 setup_button.yml"}
+    else if(r.status===404){box.className="err";box.textContent=`❌ 找不到 Workflow，請確認 REPO 設定（${REPO}）`}
+    else{box.className="err";box.textContent=`❌ 觸發失敗（HTTP ${r.status}）`}
+  }).catch(e=>{box.className="err";box.textContent=`❌ 網路錯誤：${e.message}`})
+}
+</script>
+</body>
+</html>

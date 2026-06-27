@@ -1,36 +1,24 @@
-import os
-import sys
+import os, sys
 from datetime import datetime, timezone, timedelta
 from src import dedup, rss, apis, translator
 from src.notifier import Notifier
 
-TZ_TAIPEI = timezone(timedelta(hours=8))
-
+TZ = timezone(timedelta(hours=8))
 
 def main():
-    print(f"🚀 [{datetime.now(TZ_TAIPEI).strftime('%Y-%m-%d %H:%M')} 台北時間]")
+    tok  = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat = os.environ.get("TELEGRAM_CHAT_ID")
+    if not tok or not chat:
+        sys.exit("❌ 未設定 Telegram 環境變數")
 
-    TG_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
-    TG_CHAT  = os.environ.get("TELEGRAM_CHAT_ID")
-    if not TG_TOKEN or not TG_CHAT:
-        print("❌ 未設定 Telegram 環境變數")
-        sys.exit(1)
-
-    keys = {
-        "groq":       os.environ.get("GROQ_KEY"),
-        "openrouter": os.environ.get("OPENROUTER_KEY"),
-        "gemini":     os.environ.get("GEMINI_API_KEY"),
-    }
+    keys = {k: os.environ.get(v) for k, v in {
+        "groq": "GROQ_KEY", "openrouter": "OPENROUTER_KEY", "gemini": "GEMINI_API_KEY"
+    }.items()}
 
     sent      = dedup.load()
-
-    print("\n── RSS ──────────────────────────")
-    all_items = rss.fetch()
-    print("\n── API ──────────────────────────")
-    all_items += apis.fetch_all()
-
+    all_items = rss.fetch() + apis.fetch_all()
     new_items, new_sent = dedup.filter_new(all_items, sent)
-    print(f"\n📰 去重後 {len(new_items)} 則新消息")
+    print(f"\n📰 去重後 {len(new_items)} 則")
 
     if any(keys.values()) and new_items:
         new_items = translator.translate(new_items, keys)
@@ -38,15 +26,12 @@ def main():
         for n in new_items:
             n.setdefault("title_zh", "")
 
-    notifier = Notifier(TG_TOKEN, TG_CHAT)
-    messages = notifier.build_messages(new_items)
-    print(f"📤 發送 {len(messages)} 則訊息...")
-    notifier.send_all(messages)
+    n = Notifier(tok, chat)
+    n.send_all(n.build_messages(new_items))
 
     sent.update(new_sent)
     dedup.save(sent)
-    print("✅ 完成！")
-
+    print("✅ 完成")
 
 if __name__ == "__main__":
     main()
